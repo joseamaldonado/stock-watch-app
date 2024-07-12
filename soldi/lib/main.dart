@@ -11,8 +11,10 @@ class Soldi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: "Soldi",
-      home: WatchPage()
+      theme: ThemeData.light(),
+      home: WatchPage(),
     );
   }
 }
