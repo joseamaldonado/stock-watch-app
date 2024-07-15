@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:soldi/models/stock.dart';
 import 'dart:convert';
+import 'package:soldi/pages/stock_page.dart';
 
 class WatchPage extends StatefulWidget {
   const WatchPage({super.key});
@@ -21,6 +22,8 @@ class _WatchPageState extends State<WatchPage> {
   }
 
   Future<void> getStockQuote(String symbol) async {
+    _useMockData(symbol);
+    /*
     try {
       var response = await http.get(Uri.parse(
           'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
@@ -36,7 +39,6 @@ class _WatchPageState extends State<WatchPage> {
               symbol: symbol,
               price: double.parse(globalQuote['05. price']),
               open: double.parse(globalQuote['02. open']),
-
             ));
           });
         } else {
@@ -53,14 +55,15 @@ class _WatchPageState extends State<WatchPage> {
       print('Error: $e'); // Debug: Print any errors
       _useMockData(symbol); // Use mock data in case of error
     }
+    */
   }
 
   void _useMockData(String symbol) {
     setState(() {
       stocks.add(Stock(
         symbol: symbol,
-        price: 50, // Mock price value
-        open: 50, // Mock open value
+        currentPrice: 52, // Mock price value
+        todaysOpen: 50, // Mock open value
       ));
     });
   }
@@ -75,7 +78,7 @@ class _WatchPageState extends State<WatchPage> {
             title: const Text('Add Stock'),
             content: TextField(
               controller: symbolCtrl,
-              decoration: const InputDecoration(hintText: "Symbol (e.g. AAPL)"),
+              decoration: const InputDecoration(hintText: "Symbol"),
             ),
             actions: [
               MaterialButton(
@@ -93,6 +96,11 @@ class _WatchPageState extends State<WatchPage> {
             ],
           );
         });
+  }
+
+  void goToStockPage(Stock stock) {
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => StockPage(stock: stock)));
   }
 
   @override
@@ -124,7 +132,6 @@ class _WatchPageState extends State<WatchPage> {
                     fontSize: 32,
                   ),
                 ),
-                // IconButton -> Dialog -> Get symbol
                 IconButton(
                     onPressed: _showAddStockDialog, icon: const Icon(Icons.add))
               ],
@@ -146,18 +153,22 @@ class _WatchPageState extends State<WatchPage> {
                     return ListView.builder(
                       itemCount: stocks.length,
                       itemBuilder: (context, index) {
+                        double price = stocks[index].currentPrice;
+                        double open = stocks[index].todaysOpen;
+                        double percentChange = (price - open) / open * 100;
+                        String info = "\$${price.toStringAsFixed(2)} ${percentChange.toStringAsFixed(2)}%";
                         return ListTile(
                           title: Text(stocks[index].symbol,
-                          style: const TextStyle(
-                            fontSize: 16
-                            )
-                          ),
-                          trailing: Text(stocks[index].price.toString(),
+                              style: const TextStyle(fontSize: 16)),
+                          trailing: Text(info,
                               style: TextStyle(
-                                fontSize: 16, 
-                                color: stocks[index].price > stocks[index].open ? Colors.green : (stocks[index].price < stocks[index].open ? Colors.red : Colors.black)
-                              )
-                          ),
+                                  fontSize: 16,
+                                  color: price > open
+                                      ? Colors.green
+                                      : (price < open
+                                          ? Colors.red
+                                          : Colors.black))),
+                          onTap: () => goToStockPage(stocks[index]),
                         );
                       },
                     );

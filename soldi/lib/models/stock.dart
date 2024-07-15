@@ -1,11 +1,11 @@
 class Stock {
   final String symbol;
-  final double price;
-  final double open;
+  final double currentPrice;
+  final double todaysOpen;
 
   Stock(
       {required this.symbol,
-      required this.price,
-      required this.open,
+      required this.currentPrice,
+      required this.todaysOpen,
       });
 }
