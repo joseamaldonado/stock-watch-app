@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:soldi/models/stock.dart';
-import 'package:soldi/models/day.dart';
+import 'package:soldi/models/time_series.dart';
 import 'package:soldi/components/candle_chart.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class StockPage extends StatefulWidget {
   final Stock stock;
@@ -12,93 +14,92 @@ class StockPage extends StatefulWidget {
 }
 
 class _StockPageState extends State<StockPage> {
-  List<Day> days = [];
+  List<TimeSeries> timeSeries = [];
+  String selectedTimeFrame = 'Daily';
 
   @override
   void initState() {
     super.initState();
-    getStockDailyData(widget.stock.symbol);
+    getStockData(widget.stock.symbol, 'Daily');
   }
 
-  Future<void> getStockDailyData(String symbol) async {
-    _useMockDailyData(symbol);
-    /*
-    try {
-      var response = await http.get(Uri.parse(
-          'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
-      if (response.statusCode == 200) {
-        var jsonData = jsonDecode(response.body);
-        print(jsonData); // Debug: Print the entire response
+  Future<void> getStockData(String symbol, String timeFrame) async {
+    String key = _getTimeSeriesKey(timeFrame);
+    var response = await http.get(Uri.parse(
+        'https://www.alphavantage.co/query?function=TIME_SERIES_$timeFrame&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
+    var jsonData = jsonDecode(response.body);
 
-        if (jsonData['Global Quote'] != null) {
-          var globalQuote = jsonData['Global Quote'] as Map<String, dynamic>;
-
-          setState(() {
-            stocks.add(Stock(
-              symbol: symbol,
-              price: double.parse(globalQuote['05. price']),
-              open: double.parse(globalQuote['02. open']),
-            ));
-          });
-        } else {
-          print(
-              'Global Quote not found in the response'); // Debug: No Global Quote
-          _useMockData(symbol); // Use mock data if Global Quote not found
-        }
-      } else {
-        print(
-            'Failed to load data. Status code: ${response.statusCode}'); // Debug: Failed request
-        _useMockData(symbol); // Use mock data if request failed
-      }
-    } catch (e) {
-      print('Error: $e'); // Debug: Print any errors
-      _useMockData(symbol); // Use mock data in case of error
+    if (jsonData != null && jsonData[key] != null) {
+      setState(() {
+        timeSeries.clear();
+        (jsonData[key] as Map<String, dynamic>).forEach((date, eachDay) {
+          final ts = TimeSeries(
+            date: DateTime.parse(date),
+            open: double.parse(eachDay['1. open']),
+            high: double.parse(eachDay['2. high']),
+            low: double.parse(eachDay['3. low']),
+            close: double.parse(eachDay['4. close']),
+          );
+          timeSeries.add(ts);
+        });
+      });
+    } else {
+      _useMockData(symbol, timeFrame);
     }
-    */
   }
 
-  void _useMockDailyData(String symbol) {
+  String _getTimeSeriesKey(String timeFrame) {
+    switch (timeFrame) {
+      case 'Daily':
+        return 'Time Series (Daily)';
+      case 'Weekly':
+        return 'Weekly Time Series';
+      case 'Monthly':
+        return 'Monthly Time Series';
+      default:
+        return 'Time Series (Daily)'; // Default fallback
+    }
+  }
+
+  void _useMockData(String symbol, String timeFrame) {
     setState(() {
-      days.add(Day( 
-          open: 52, // Mock price value
-          high: 55, // Mock open value
-          low: 50, // Mock price value
-          close: 53, // Mock close value
-          // volume: 1000 // Mock volume value
-          date: DateTime.now().subtract(Duration(days: 5))));
-      days.add(Day(
-        open: 53, // Mock price value
-        high: 54, // Mock open value
-        low: 48, // Mock price value
-        close: 52, // Mock close value
-        // volume: 1000 // Mock volume value
-        date: DateTime.now().subtract(Duration(days: 4)),
-      ));
-      days.add(Day(
-        open: 52, // Mock price value
-        high: 60, // Mock open value
-        low: 50, // Mock price value
-        close: 58, // Mock close value
-        // volume: 1000 // Mock volume value
-        date: DateTime.now().subtract(Duration(days: 3)),
-      ));
-      days.add(Day(
-        open: 58, // Mock price value
-        high: 68, // Mock open value
-        low: 58, // Mock price value
-        close: 67, // Mock close value
-        // volume: 1000 // Mock volume value
-        date: DateTime.now().subtract(Duration(days: 2)),
-      ));
-      days.add(Day(
-        open: 67, // Mock price value
-        high: 75, // Mock open value
-        low: 65, // Mock price value
-        close: 74, // Mock close value
-        // volume: 1000 // Mock volume value
-        date: DateTime.now().subtract(Duration(days: 1)),
-      ));
+      timeSeries.clear();
+      if (timeFrame == 'Daily') {
+        timeSeries.addAll([
+          TimeSeries(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 5))),
+          TimeSeries(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 4))),
+          TimeSeries(open: 52, high: 60, low: 50, close: 58, date: DateTime.now().subtract(Duration(days: 3))),
+          TimeSeries(open: 58, high: 68, low: 58, close: 67, date: DateTime.now().subtract(Duration(days: 2))),
+          TimeSeries(open: 67, high: 75, low: 65, close: 74, date: DateTime.now().subtract(Duration(days: 1))),
+        ]);
+      } else if (timeFrame == 'Weekly') {
+        timeSeries.addAll([
+          TimeSeries(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 7))),
+          TimeSeries(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 14))),
+        ]);
+      } else if (timeFrame == 'Monthly') {
+        timeSeries.addAll([
+          TimeSeries(open: 52, high: 60, low: 48, close: 59, date: DateTime.now().subtract(Duration(days: 30))),
+          TimeSeries(open: 59, high: 72, low: 48, close: 67, date: DateTime.now().subtract(Duration(days: 60))),
+        ]);
+      }
     });
+  }
+
+  Widget buildTimeFrameButton(String timeFrame) {
+    return TextButton(
+      onPressed: () {
+        setState(() {
+          selectedTimeFrame = timeFrame;
+          getStockData(widget.stock.symbol, timeFrame);
+        });
+      },
+      style: TextButton.styleFrom(
+        backgroundColor: selectedTimeFrame == timeFrame ? Colors.grey : Colors.transparent,
+        foregroundColor: selectedTimeFrame == timeFrame ? Colors.white : Colors.black,
+      ),
+      child: Text(timeFrame),
+    );
   }
 
   @override
@@ -107,7 +108,8 @@ class _StockPageState extends State<StockPage> {
         backgroundColor: Colors.grey[200],
         appBar: AppBar(
           backgroundColor: Colors.grey[200],
-          title: Text(widget.stock.symbol, style: const TextStyle(fontSize: 24)),
+          title: const Text('Soldi',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -119,21 +121,42 @@ class _StockPageState extends State<StockPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text('${widget.stock.symbol}',
+                    Text(widget.stock.symbol,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        )
-                    ),
-                    Text("\$${widget.stock.currentPrice.toStringAsFixed(2)}")
-
-                    
+                          fontSize: 24,
+                        )),
+                    Text(widget.stock.priceInfo,
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: widget.stock.currentPrice >
+                                    widget.stock.todaysOpen
+                                ? Colors.green
+                                : (widget.stock.currentPrice <
+                                        widget.stock.todaysOpen)
+                                    ? Colors.red
+                                    : Colors.black)),
                   ],
                 ),
               ),
-              // Stock data graph (line graph easiest and best)
-              Center(child: CandleChartWidget(days: days))
-              // Metrics: Intrinsic value, etc...
+              // Stock data graph
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CandleChartWidget(timeSeries: timeSeries)),
+              ),
+              // Change time frame buttons
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    buildTimeFrameButton('Daily'),
+                    buildTimeFrameButton('Weekly'),
+                    buildTimeFrameButton('Monthly'),
+                  ],
+                ),
+              ),
             ],
           ),
         ));

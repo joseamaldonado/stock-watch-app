@@ -22,40 +22,27 @@ class _WatchPageState extends State<WatchPage> {
   }
 
   Future<void> getStockQuote(String symbol) async {
-    _useMockData(symbol);
-    /*
-    try {
-      var response = await http.get(Uri.parse(
-          'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
-      if (response.statusCode == 200) {
-        var jsonData = jsonDecode(response.body);
-        print(jsonData); // Debug: Print the entire response
+    var response = await http.get(Uri.parse(
+    'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
 
-        if (jsonData['Global Quote'] != null) {
-          var globalQuote = jsonData['Global Quote'] as Map<String, dynamic>;
+    if (response.statusCode == 200) {
+      var jsonData = jsonDecode(response.body);
+      var globalQuote = jsonData['Global Quote'];
 
-          setState(() {
-            stocks.add(Stock(
-              symbol: symbol,
-              price: double.parse(globalQuote['05. price']),
-              open: double.parse(globalQuote['02. open']),
-            ));
-          });
-        } else {
-          print(
-              'Global Quote not found in the response'); // Debug: No Global Quote
-          _useMockData(symbol); // Use mock data if Global Quote not found
-        }
+      if (globalQuote != null) {
+        setState(() {
+          stocks.add(Stock(
+            symbol: symbol,
+            currentPrice: double.parse(globalQuote['05. price']),
+            todaysOpen: double.parse(globalQuote['02. open']),
+          ));
+        });
       } else {
-        print(
-            'Failed to load data. Status code: ${response.statusCode}'); // Debug: Failed request
-        _useMockData(symbol); // Use mock data if request failed
+        _useMockData(symbol);
       }
-    } catch (e) {
-      print('Error: $e'); // Debug: Print any errors
-      _useMockData(symbol); // Use mock data in case of error
+    } else {
+      _useMockData(symbol);
     }
-    */
   }
 
   void _useMockData(String symbol) {
@@ -153,19 +140,17 @@ class _WatchPageState extends State<WatchPage> {
                     return ListView.builder(
                       itemCount: stocks.length,
                       itemBuilder: (context, index) {
-                        double price = stocks[index].currentPrice;
-                        double open = stocks[index].todaysOpen;
-                        double percentChange = (price - open) / open * 100;
-                        String info = "\$${price.toStringAsFixed(2)} ${percentChange.toStringAsFixed(2)}%";
                         return ListTile(
                           title: Text(stocks[index].symbol,
                               style: const TextStyle(fontSize: 16)),
-                          trailing: Text(info,
+                          trailing: Text(stocks[index].priceInfo,
                               style: TextStyle(
                                   fontSize: 16,
-                                  color: price > open
+                                  color: stocks[index].currentPrice >
+                                          stocks[index].todaysOpen
                                       ? Colors.green
-                                      : (price < open
+                                      : (stocks[index].currentPrice <
+                                              stocks[index].todaysOpen
                                           ? Colors.red
                                           : Colors.black))),
                           onTap: () => goToStockPage(stocks[index]),
