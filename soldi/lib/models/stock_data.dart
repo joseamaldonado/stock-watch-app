@@ -1,11 +1,11 @@
-class TimeSeries {
+class StockData {
   final double open;
   final double high;
   final double low;
   final double close;
   final DateTime date;
 
-  TimeSeries({
+  StockData({
     required this.open,
     required this.high,
     required this.low,
@@ -15,6 +15,6 @@ class TimeSeries {
 
   @override
   String toString() {
-    return 'TimeSeries(open: $open, high: $high, low: $low, close: $close, date: $date)';
+    return 'StockData(open: $open, high: $high, low: $low, close: $close, date: $date)';
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:soldi/models/stock.dart';
-import 'package:soldi/models/time_series.dart';
+import 'package:soldi/models/stock_data.dart';
 import 'package:soldi/components/candle_chart.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -14,7 +14,7 @@ class StockPage extends StatefulWidget {
 }
 
 class _StockPageState extends State<StockPage> {
-  List<TimeSeries> timeSeries = [];
+  List<StockData> timeSeries = [];
   String selectedTimeFrame = 'Daily';
 
   @override
@@ -24,7 +24,7 @@ class _StockPageState extends State<StockPage> {
   }
 
   Future<void> getStockData(String symbol, String timeFrame) async {
-    String key = _getTimeSeriesKey(timeFrame);
+    String key = _getStockDataKey(timeFrame);
     var response = await http.get(Uri.parse(
         'https://www.alphavantage.co/query?function=TIME_SERIES_$timeFrame&symbol=$symbol&apikey=WAK9NBRKX4F0XIKW'));
     var jsonData = jsonDecode(response.body);
@@ -32,15 +32,15 @@ class _StockPageState extends State<StockPage> {
     if (jsonData != null && jsonData[key] != null) {
       setState(() {
         timeSeries.clear();
-        (jsonData[key] as Map<String, dynamic>).forEach((date, eachDay) {
-          final ts = TimeSeries(
+        (jsonData[key] as Map<String, dynamic>).forEach((date, eachData) {
+          final data = StockData(
             date: DateTime.parse(date),
-            open: double.parse(eachDay['1. open']),
-            high: double.parse(eachDay['2. high']),
-            low: double.parse(eachDay['3. low']),
-            close: double.parse(eachDay['4. close']),
+            open: double.parse(eachData['1. open']),
+            high: double.parse(eachData['2. high']),
+            low: double.parse(eachData['3. low']),
+            close: double.parse(eachData['4. close']),
           );
-          timeSeries.add(ts);
+          timeSeries.add(data);
         });
       });
     } else {
@@ -48,7 +48,7 @@ class _StockPageState extends State<StockPage> {
     }
   }
 
-  String _getTimeSeriesKey(String timeFrame) {
+  String _getStockDataKey(String timeFrame) {
     switch (timeFrame) {
       case 'Daily':
         return 'Time Series (Daily)';
@@ -66,21 +66,21 @@ class _StockPageState extends State<StockPage> {
       timeSeries.clear();
       if (timeFrame == 'Daily') {
         timeSeries.addAll([
-          TimeSeries(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 5))),
-          TimeSeries(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 4))),
-          TimeSeries(open: 52, high: 60, low: 50, close: 58, date: DateTime.now().subtract(Duration(days: 3))),
-          TimeSeries(open: 58, high: 68, low: 58, close: 67, date: DateTime.now().subtract(Duration(days: 2))),
-          TimeSeries(open: 67, high: 75, low: 65, close: 74, date: DateTime.now().subtract(Duration(days: 1))),
+          StockData(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 5))),
+          StockData(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 4))),
+          StockData(open: 52, high: 60, low: 50, close: 58, date: DateTime.now().subtract(Duration(days: 3))),
+          StockData(open: 58, high: 68, low: 58, close: 67, date: DateTime.now().subtract(Duration(days: 2))),
+          StockData(open: 67, high: 75, low: 65, close: 74, date: DateTime.now().subtract(Duration(days: 1))),
         ]);
       } else if (timeFrame == 'Weekly') {
         timeSeries.addAll([
-          TimeSeries(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 7))),
-          TimeSeries(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 14))),
+          StockData(open: 52, high: 55, low: 50, close: 53, date: DateTime.now().subtract(Duration(days: 7))),
+          StockData(open: 53, high: 54, low: 48, close: 52, date: DateTime.now().subtract(Duration(days: 14))),
         ]);
       } else if (timeFrame == 'Monthly') {
         timeSeries.addAll([
-          TimeSeries(open: 52, high: 60, low: 48, close: 59, date: DateTime.now().subtract(Duration(days: 30))),
-          TimeSeries(open: 59, high: 72, low: 48, close: 67, date: DateTime.now().subtract(Duration(days: 60))),
+          StockData(open: 52, high: 60, low: 48, close: 59, date: DateTime.now().subtract(Duration(days: 30))),
+          StockData(open: 59, high: 72, low: 48, close: 67, date: DateTime.now().subtract(Duration(days: 60))),
         ]);
       }
     });
